@@ -1,0 +1,99 @@
+name: Plan / Apply On Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Run terraform fmt check
+        uses: docker://hashicorp/terraform:1.0.9
+        with:
+          entrypoint: terraform
+          args: "fmt -check -diff -recursive ./"
+
+  inform_about_apply:
+    name: Inform About Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Inform on PR that Apply is Running
+        uses: mshick/add-pr-comment@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]'
+          message: |
+            ***Running terraform apply***
+            Results will display here momentarily...
+
+  plan_and_apply:
+    name: Plan and Apply
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        path:
+          - terraform/dev
+          - terraform/stage
+          - terraform/prod
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-west-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.9
+
+      - name: Initialize Terraform
+        run: |
+          cd ${{ matrix.path }}
+          terraform init -input=false
+
+      - name: Plan Terraform
+        id: plan
+        run: |
+          cd ${{ matrix.path }}
+          terraform plan >/dev/null -out=plan.tfplan
+          terraform show -no-color plan.tfplan
+
+      - name: Apply Terraform
+        id: apply
+        run: |
+          cd ${{ matrix.path }}
+          terraform apply \
+            -input=false \
+            -no-color \
+            plan.tfplan
+
+      - name: Post Plan and Apply to GitHub PR
+        if: always()
+        uses: mshick/add-pr-comment@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]'
+          message: |
+            Applying **${{ matrix.path }}**:
+
+            ```
+            ${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}
+            ```
+
+            ```
+            ${{ steps.apply.outputs.stdout || steps.apply.outputs.stderr }}
+            ```
