@@ -51,11 +51,6 @@ jobs:
           cd ${{ matrix.path }}
           terraform init -input=false
 
-      - name: Validate Terraform
-        run: |
-          cd ${{ matrix.path }}
-          terraform validate -no-color
-
       - name: Plan Terraform
         id: plan
         run: |
