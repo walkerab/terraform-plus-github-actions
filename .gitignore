@@ -4,6 +4,7 @@
 # .tfstate files
 *.tfstate
 *.tfstate.*
+!terraform/backend/terraform.tfstate
 
 # Crash log files
 crash.log
