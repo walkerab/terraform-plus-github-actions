@@ -94,12 +94,12 @@ jobs:
       # Workaround for multi-line outputs https://trstringer.com/github-actions-multiline-strings/#option-2---environment-variable
       - name: Put Plan Files in ENV Vars
         run: |
-          GLOBAL_PLAN=$(cat terraform-dev/plan.txt)
+          DEV_PLAN=$(cat terraform-dev/plan.txt)
           echo "DEV_PLAN<<EOF" >> $GITHUB_ENV
           echo "$DEV_PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-          STAGING_PLAN=$(cat terraform-stage/plan.txt)
+          STAGE_PLAN=$(cat terraform-stage/plan.txt)
           echo "STAGE_PLAN<<EOF" >> $GITHUB_ENV
           echo "$STAGE_PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
