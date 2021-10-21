@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
+
 jobs:
   lint:
     name: Lint
