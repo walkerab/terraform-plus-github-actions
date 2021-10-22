@@ -17,6 +17,7 @@ resource "aws_instance" "this" {
   instance_type = "t3.micro"
 
   tags = {
-    Name = "some-ec2-service"
+    Name        = "some-ec2-service",
+    Application = "some-ec2-service"
   }
 }
