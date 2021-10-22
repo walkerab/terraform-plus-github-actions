@@ -12,12 +12,14 @@ data "aws_ami" "amazon_linux_2_ami" {
   }
 }
 
+data "aws_default_tags" "this" {}
+
 resource "aws_instance" "this" {
   ami           = data.aws_ami.amazon_linux_2_ami.id
   instance_type = "t3.micro"
 
   tags = {
-    Name        = "some-ec2-service",
+    Name        = "${data.aws_default_tags.this.tags.Environment}-some-ec2-service",
     Application = "some-ec2-service"
   }
 }
