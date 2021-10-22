@@ -4,7 +4,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Environment = "dev"
+      Environment = "stage"
       ManagedBy   = "terraform"
       Repo        = "https://github.com/walkerab/terraform-plus-github-actions"
     }
