@@ -12,11 +12,11 @@ data "aws_ami" "amazon_linux_2_ami" {
   }
 }
 
-# resource "aws_instance" "this" {
-#   ami           = data.aws_ami.amazon_linux_2_ami.id
-#   instance_type = "t3.micro"
+resource "aws_instance" "this" {
+  ami           = data.aws_ami.amazon_linux_2_ami.id
+  instance_type = "t3.micro"
 
-#   tags = {
-#     Name = "some-ec2-service"
-#   }
-# }
+  tags = {
+    Name = "some-ec2-service"
+  }
+}
