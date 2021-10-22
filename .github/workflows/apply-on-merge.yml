@@ -20,7 +20,7 @@ jobs:
         uses: docker://hashicorp/terraform:1.0.9
         with:
           entrypoint: terraform
-          args: "fmt -check -diff -recursive ./"
+          args: "fmt -check -diff -recursive ./terraform"
 
   inform_about_apply:
     name: Inform About Apply
