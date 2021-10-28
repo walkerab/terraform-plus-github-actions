@@ -11,7 +11,7 @@ env:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
 
   inform_about_apply:
     name: Inform About Apply
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Inform on PR that Apply is Running
@@ -38,7 +38,7 @@ jobs:
 
   plan_and_apply:
     name: Plan and Apply
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
