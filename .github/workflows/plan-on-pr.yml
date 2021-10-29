@@ -58,7 +58,7 @@ jobs:
         id: plan
         run: |
           cd ${{ matrix.path }}
-          terraform plan >/dev/null -out=plan.tfplan
+          terraform plan -out=plan.tfplan
           terraform show -no-color plan.tfplan
 
       # Store a file with the plan output and also modify it to have github diff color formatting.
