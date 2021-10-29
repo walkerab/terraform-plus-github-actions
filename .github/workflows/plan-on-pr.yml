@@ -58,7 +58,7 @@ jobs:
         id: plan
         run: |
           cd ${{ matrix.path }}
-          terraform plan -out=plan.tfplan \
+          terraform plan -no-color -out=plan.tfplan \
           && terraform show -no-color plan.tfplan
           exit 0
 
