@@ -58,8 +58,9 @@ jobs:
         id: plan
         run: |
           cd ${{ matrix.path }}
-          terraform plan -out=plan.tfplan
-          terraform show -no-color plan.tfplan
+          terraform plan -out=plan.tfplan \
+          && terraform show -no-color plan.tfplan
+          exit 0
 
       # Store a file with the plan output and also modify it to have github diff color formatting.
       # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
