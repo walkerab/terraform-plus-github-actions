@@ -70,13 +70,15 @@ jobs:
 
       - name: Plan Terraform
         id: plan
+        continue-on-error: true
         run: |
           cd ${{ matrix.path }}
-          terraform plan -out=plan.tfplan \
+          terraform plan -no-color -out=plan.tfplan \
           && terraform show -no-color plan.tfplan
 
       - name: Apply Terraform
         id: apply
+        continue-on-error: true
         run: |
           cd ${{ matrix.path }}
           terraform apply \
@@ -85,7 +87,6 @@ jobs:
             plan.tfplan
 
       - name: Post Plan and Apply to GitHub PR
-        if: always()
         uses: mshick/add-pr-comment@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
