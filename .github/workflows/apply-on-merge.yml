@@ -77,6 +77,7 @@ jobs:
           && terraform show -no-color plan.tfplan
 
       - name: Apply Terraform
+        if: steps.plan.outcome == 'success'
         id: apply
         continue-on-error: true
         run: |
@@ -86,7 +87,34 @@ jobs:
             -no-color \
             plan.tfplan
 
+      - name: Post Plan Failure
+        if: steps.plan.outcome == 'failure'
+        uses: mshick/add-pr-comment@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]'
+          message: |
+            Plan failed for **${{ matrix.path }}**:
+
+            ```
+            ${{ steps.plan.outputs.stderr }}
+            ```
+
+      - name: Post Apply Failure
+        if: steps.apply.outcome == 'failure'
+        uses: mshick/add-pr-comment@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]'
+          message: |
+            Apply failed for **${{ matrix.path }}**:
+
+            ```
+            ${{ steps.apply.outputs.stderr }}
+            ```
+
       - name: Post Plan and Apply to GitHub PR
+        if: steps.plan.outcome == 'success' && steps.apply.outcome == 'success'
         uses: mshick/add-pr-comment@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -95,9 +123,9 @@ jobs:
             Applying **${{ matrix.path }}**:
 
             ```
-            ${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}
+            ${{ steps.plan.outputs.stdout }}
             ```
 
             ```
-            ${{ steps.apply.outputs.stdout || steps.apply.outputs.stderr }}
+            ${{ steps.apply.outputs.stdout }}
             ```
