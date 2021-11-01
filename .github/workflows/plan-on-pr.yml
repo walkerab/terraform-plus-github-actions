@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'terraform/**'
 
 env:
   TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
