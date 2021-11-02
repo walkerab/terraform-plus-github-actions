@@ -31,9 +31,9 @@ jobs:
       fail-fast: false
       matrix:
         path:
-          - terraform/dev
-          - terraform/stage
-          - terraform/prod
+          - dev
+          - stage
+          - prod
 
     steps:
       - name: Check out code
@@ -53,14 +53,14 @@ jobs:
 
       - name: Initialize Terraform
         run: |
-          cd ${{ matrix.path }}
+          cd terraform/${{ matrix.path }}
           terraform init -input=false
 
       - name: Plan Terraform
         id: plan
         continue-on-error: true
         run: |
-          cd ${{ matrix.path }}
+          cd terraform/${{ matrix.path }}
           terraform plan -no-color -out=plan.tfplan \
           && terraform show -no-color plan.tfplan
 
@@ -70,16 +70,9 @@ jobs:
       # Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
       - run: echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
 
-      # Credit @gnb - https://github.com/actions/upload-artifact/issues/22#issuecomment-873445944
-      # Replace "/" with "-"
-      - name: Prepare a Safe Name for Artifact
-        run: |
-          name=$(echo "${{ matrix.path }}" | sed 's/\//-/')
-          echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
-
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ matrix.path }}
           path: plan.txt
 
   post_plan:
@@ -95,17 +88,17 @@ jobs:
       # Workaround for multi-line outputs https://trstringer.com/github-actions-multiline-strings/#option-2---environment-variable
       - name: Put Plan Files in ENV Vars
         run: |
-          DEV_PLAN=$(cat terraform-dev/plan.txt)
+          DEV_PLAN=$(cat dev/plan.txt)
           echo "DEV_PLAN<<EOF" >> $GITHUB_ENV
           echo "$DEV_PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-          STAGE_PLAN=$(cat terraform-stage/plan.txt)
+          STAGE_PLAN=$(cat stage/plan.txt)
           echo "STAGE_PLAN<<EOF" >> $GITHUB_ENV
           echo "$STAGE_PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-          PROD_PLAN=$(cat terraform-prod/plan.txt)
+          PROD_PLAN=$(cat prod/plan.txt)
           echo "PROD_PLAN<<EOF" >> $GITHUB_ENV
           echo "$PROD_PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
