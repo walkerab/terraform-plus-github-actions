@@ -18,11 +18,13 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Run terraform fmt check
-        uses: docker://hashicorp/terraform:1.0.9
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
         with:
-          entrypoint: terraform
-          args: "fmt -check -diff -recursive ./terraform"
+          terraform_version: 1.0.9
+
+      - name: Run terraform fmt check
+        run: terraform fmt -check -diff -recursive ./terraform
 
   plan:
     name: Plan
