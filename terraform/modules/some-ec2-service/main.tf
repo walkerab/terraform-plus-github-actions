@@ -20,6 +20,6 @@ resource "aws_instance" "this" {
 
   tags = {
     Name        = "${data.aws_default_tags.this.tags.Environment}-some-ec2-service",
-    Application = "some-ec2-service"
+    Application =  "some-ec2-service"
   }
 }
