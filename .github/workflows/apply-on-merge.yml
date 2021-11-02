@@ -7,9 +7,6 @@ on:
     paths:
       - 'terraform/**'
 
-env:
-  TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
-
 jobs:
   lint:
     name: Lint
@@ -42,6 +39,8 @@ jobs:
 
   plan_and_apply:
     name: Plan and Apply
+    env:
+      TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
