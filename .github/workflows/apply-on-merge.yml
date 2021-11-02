@@ -45,9 +45,9 @@ jobs:
       fail-fast: false
       matrix:
         path:
-          - terraform/dev
-          - terraform/stage
-          - terraform/prod
+          - dev
+          - stage
+          - prod
 
     steps:
       - name: Check out code
@@ -67,14 +67,14 @@ jobs:
 
       - name: Initialize Terraform
         run: |
-          cd ${{ matrix.path }}
+          cd terraform/${{ matrix.path }}
           terraform init -input=false
 
       - name: Plan Terraform
         id: plan
         continue-on-error: true
         run: |
-          cd ${{ matrix.path }}
+          cd terraform/${{ matrix.path }}
           terraform plan -no-color -out=plan.tfplan \
           && terraform show -no-color plan.tfplan
 
@@ -83,7 +83,7 @@ jobs:
         id: apply
         continue-on-error: true
         run: |
-          cd ${{ matrix.path }}
+          cd terraform/${{ matrix.path }}
           terraform apply \
             -input=false \
             -no-color \
