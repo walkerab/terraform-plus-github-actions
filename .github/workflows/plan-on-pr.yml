@@ -4,8 +4,8 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'terraform/**'
+    # paths:
+    #   - 'terraform/**'
 
 env:
   TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
@@ -63,47 +63,7 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color -out=plan.tfplan \
-          && terraform show -no-color plan.tfplan
-
-      # Store a file with the plan output and also modify it to have github diff color formatting.
-      # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
-      # It stores the amount of spaces in `\1` and the +/- in `\2`.
-      # Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
-      - run: echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.path }}
-          path: plan.txt
-
-  post_plan:
-    name: Post Plan
-    needs: [plan]
-    runs-on: ubuntu-20.04
-
-    steps:
-      # Downloads all plan.txt artifacts and stores them in folders based on artifact name
-      - name: Download Plan Outputs
-        uses: actions/download-artifact@v2
-
-      # Workaround for multi-line outputs https://trstringer.com/github-actions-multiline-strings/#option-2---environment-variable
-      - name: Put Plan Files in ENV Vars
-        run: |
-          DEV_PLAN=$(cat dev/plan.txt)
-          echo "DEV_PLAN<<EOF" >> $GITHUB_ENV
-          echo "$DEV_PLAN" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          STAGE_PLAN=$(cat stage/plan.txt)
-          echo "STAGE_PLAN<<EOF" >> $GITHUB_ENV
-          echo "$STAGE_PLAN" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          PROD_PLAN=$(cat prod/plan.txt)
-          echo "PROD_PLAN<<EOF" >> $GITHUB_ENV
-          echo "$PROD_PLAN" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          terraform plan -no-color
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -112,25 +72,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           repo-token-user-login: 'github-actions[bot]'
           message: |
-            ## DEV
-            ```diff
-            ${{ env.DEV_PLAN }}
+            ## ${{ matrix.path }} plan
             ```
-
-            -----
-
-            ## STAGE
-            ```diff
-            ${{ env.STAGE_PLAN }}
+            ${{ steps.plan.outputs.stdout }}
             ```
-
-            -----
-
-            ## PROD
-            ```diff
-            ${{ env.PROD_PLAN }}
-            ```
-
-            -----
-
-            Merge to main to apply all of the above
