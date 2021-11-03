@@ -1,4 +1,4 @@
-name: Plan / Test On PR
+name: Plan or Apply
 
 on:
   pull_request:
@@ -6,6 +6,11 @@ on:
       - main
     # paths:
     #   - 'terraform/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
 
 jobs:
   lint:
@@ -23,7 +28,7 @@ jobs:
       - name: Run terraform fmt check
         run: terraform fmt -check -diff -recursive ./terraform
 
-  plan:
+  plan_or_apply:
     name: Plan
     env:
       TF_VAR_allowed_account_id: ${{ secrets.ALLOWED_ACCOUNT_ID }}
@@ -62,16 +67,35 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color
+          terraform plan -no-color -out plan.tfplan
 
-      - name: Post Plan to GitHub PR
+      - name: Apply Terraform
+        id: apply
+        continue-on-error: true
+        if: |
+          steps.plan.outcome == 'success'
+          && github.ref == 'refs/heads/main'
+          && github.event_name == 'push'
+        run: |
+          cd terraform/${{ matrix.path }}
+          terraform apply \
+            -input=false \
+            -no-color \
+            plan.tfplan
+
+      - name: Post Plan/Apply to GitHub PR
         uses: mshick/add-pr-comment@v1
         with:
           allow-repeats: true
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           repo-token-user-login: 'github-actions[bot]'
           message: |
-            ## ${{ matrix.path }} plan
+            ## ${{ matrix.path }} plan${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && '/apply' }}
             ```
-            ${{ steps.plan.outputs.stdout }}
+            ${{ join([
+              steps.plan.outputs.stdout,
+              steps.plan.outputs.stderr,
+              steps.apply.outputs.stdout,
+              steps.apply.outputs.stderr
+            ]) }}
             ```
