@@ -92,10 +92,5 @@ jobs:
           message: |
             ## ${{ matrix.path }} plan${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && '/apply' }}
             ```
-            ${{ join([
-              steps.plan.outputs.stdout,
-              steps.plan.outputs.stderr,
-              steps.apply.outputs.stdout,
-              steps.apply.outputs.stderr
-            ]) }}
+            ${{ join(steps.plan.outputs.*, "\n") }}${{ join(steps.apply.outputs.*, "\n")
             ```
