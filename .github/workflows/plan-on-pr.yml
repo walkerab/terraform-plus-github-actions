@@ -70,8 +70,9 @@ jobs:
 
       - name: Put Plan in Env Var
         run: |
+          PLAN=$(cat plan.txt)
           echo "PLAN<<EOF" >> $GITHUB_ENV
-          echo $(cat plan.txt) >> $GITHUB_ENV
+          echo "$PLAN" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Post Plan to GitHub PR
