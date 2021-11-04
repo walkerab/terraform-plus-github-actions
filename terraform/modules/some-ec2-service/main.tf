@@ -1,3 +1,11 @@
+resource "aws_security_group" "this" {
+  name = "allow-nothing"
+
+  tags = {
+    Name = "allow-nothing"
+  }  
+}
+
 # Find the latest amazon linux 2 ami in the region
 data "aws_ami" "amazon_linux_2_ami" {
   most_recent = true
@@ -17,6 +25,7 @@ data "aws_default_tags" "this" {}
 resource "aws_instance" "this" {
   ami           = data.aws_ami.amazon_linux_2_ami.id
   instance_type = "t3.micro"
+  security_groups = [aws_security_group.this.name]
 
   tags = {
     Name        = "${data.aws_default_tags.this.tags.Environment}-some-ec2-service",
