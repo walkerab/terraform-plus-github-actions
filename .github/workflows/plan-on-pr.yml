@@ -59,6 +59,7 @@ jobs:
         id: plan
         continue-on-error: true
         run: |
+          cd terraform/${{ matrix.path }}
           terraform plan -no-color -out=tfplan \
           && terraform show -no-color tfplan
 
