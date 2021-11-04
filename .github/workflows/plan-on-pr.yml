@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    # paths:
-    #   - 'terraform/**'
 
 jobs:
   lint:
@@ -61,8 +59,19 @@ jobs:
         id: plan
         continue-on-error: true
         run: |
-          cd terraform/${{ matrix.path }}
-          terraform plan -no-color
+          terraform plan -no-color -out=tfplan \
+          && terraform show -no-color tfplan
+
+      - name: Reformat Plan
+        run: |
+          echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
+          | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
+
+      - name: Put Plan in Env Var
+        run: |
+          echo "PLAN<<EOF" >> $GITHUB_ENV
+          echo $(cat plan.txt) >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -73,5 +82,5 @@ jobs:
           message: |
             ## ${{ matrix.path }} plan
             ```
-            ${{ steps.plan.outputs.stdout }}
+            ${{ env.PLAN }}
             ```
