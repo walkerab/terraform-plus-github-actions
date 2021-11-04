@@ -83,6 +83,6 @@ jobs:
           repo-token-user-login: 'github-actions[bot]'
           message: |
             ## ${{ matrix.path }} plan
-            ```
+            ```diff
             ${{ env.PLAN }}
             ```
