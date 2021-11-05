@@ -219,9 +219,9 @@ This isn't bad but we can do better.
 
 ### Remove Refresh Messages
 
-If you've ever worked with a large Terraform module you know that the "Refreshing state..." lines can go on and on and on. There can often be hundreds of lines saying it at the top. In the context of reviewing plan output these messages are not at all useful so let's strip them out.
+If you've ever worked with a large Terraform module you know that the "Refreshing state..." lines can go on and on and on. There can often be hundreds of lines saying it. In the context of reviewing plan output these messages are not at all useful so lets strip them out.
 
-Note that we do still want refresh to run (it's essential) we simply don't want to see its output in our plan message.
+Note that we do still want refresh to run (it's essential). We simply don't want to see its output in our plan message.
 
 The traditional workaround for this has been like so:
 
@@ -275,9 +275,9 @@ and it will show up like this:
 
 ![Colorized comment on a PR using diff block](images/diff-colors.png)
 
-Let's leverage this to bring some coloring back to our plan messages. It won't be the same style of coloring but it will at least have the intended effect of placing your attention where it needs to be.
+We can leverage this to bring some coloring back to our plan messages. It won't be the same style of coloring but it will at least have the intended effect of placing your attention where it needs to be.
 
-The character that controls the color **must be at the beginning of the line** in order to what we want. Otherwise the line will show as plain text. `terraform plan` indents all of its output so we can't simply change our plan message to be in a diff block.
+The character that controls the color **must be at the beginning of the line** in order for it to do what we want. Otherwise the line will continue to show as plain text. Since Terraform indents all of its plan output we will need to move the control characters around somehow.
 
 Let's add another step between the plan and the comment to reformat the output to have the `-` and `+` characters moved to the beginning of the line.
 
