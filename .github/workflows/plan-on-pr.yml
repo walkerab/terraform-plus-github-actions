@@ -63,6 +63,9 @@ jobs:
           terraform plan -no-color -out=tfplan \
           && terraform show -no-color tfplan
 
+      # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
+      # It stores the amount of spaces in `\1` and the +/- in `\2`.
+      # Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
       - name: Reformat Plan
         run: |
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
