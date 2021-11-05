@@ -359,14 +359,13 @@ The character that controls the color **must be at the beginning of the line** i
 Let's add another step between the plan and the comment to reformat the output to have the `-` and `+` characters moved to the beginning of the line.
 
 ```yaml
-			# Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
-			# It stores the amount of spaces in `\1` and the +/- in `\2`.
-			# Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
       - name: Reformat Plan
         run: |
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
           | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
 ```
+
+`sed` is taking all lines that begin with one or more spaces followed by a `+` or `-`. It stores the amount of spaces in `\1` and the +/- in `\2`. Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
 
 We've output this to a file to make it easier to have the plan be available to our comment action. The comment action needs to output `plan.txt` now but it cannot directly reference file contents. It can however reference [the env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context), a place for setting shared environment variables.
 
