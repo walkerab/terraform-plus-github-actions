@@ -211,7 +211,7 @@ First you will need to expand the list of checks by clicking "Show all checks". 
 
 ## Improvements to Plan Output
 
-If we create a PR we will get a plan that looks something like this:
+If we create a PR we will get a plan comment that looks something like this:
 
 ![`terraform plan` output in Github PR comments section - simple black on gray with refresh messages at the top. Resources are being added, modified, and removed.](images/vanilla-stage-plan.png)
 
