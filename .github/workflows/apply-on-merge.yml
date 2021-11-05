@@ -114,7 +114,7 @@ jobs:
           message: |
             Applying **${{ matrix.path }}**:
 
-            ```
+            ```diff
             ${{ env.PLAN }}
             ```
 
