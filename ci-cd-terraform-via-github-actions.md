@@ -519,7 +519,7 @@ jobs:
             ```
 ```` 
 
-At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", Github will perform a merge and then a push in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
+At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", Github will perform a **merge** and then a **push** in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
 
 There is a job to announce that the apply process is running. This is just for UX as it can take several moments for the actual results of the apply to appear. It makes it so there is some more immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
 
