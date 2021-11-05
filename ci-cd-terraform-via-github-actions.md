@@ -24,11 +24,9 @@ This code covers a very simple trunk-based development workflow.
 
 ## The Terraform Bits
 
-The Terraform code creates a dummy application that consists of a single EC2 instance. It's deployed into three virtually identical environments: dev, stage, and prod.
+The [Terraform code](https://github.com/walkerab/terraform-plus-github-actions/tree/main/terraform) is fairly irrelevant. It's there as a placeholder just so there is _something_ to run the workflows against. It creates a dummy application that consists of a single EC2 instance. It's deployed into three virtually identical environments: dev, stage, and prod.
 
-I'm not going to spend any time explaining the Terraform code as it's not the point of this article. We are more interested in the Github Actions side of this.
-
-Each root module (dev, stage, prod) looks like this:
+All we really need to know is that it takes a single input variable to restrict which account the code will be run against.
 
 ```hcl
 variable "allowed_account_id" {
@@ -36,88 +34,13 @@ variable "allowed_account_id" {
   type        = string
 }
 
-terraform {
-  required_version = "1.0.9"
-
-  backend "s3" {
-    bucket         = "tfstate-289d53ee-aadb-82b7-3c1b-f6ff95aaef2c"
-    key            = "dev.tfstate" # <-- this changes per environment
-    region         = "us-east-1"
-    dynamodb_table = "terraform-state-lock"
-  }
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.57.0"
-    }
-  }
-}
-
 provider "aws" {
   region              = "us-east-1"
   allowed_account_ids = [var.allowed_account_id]
 
-  default_tags {
-    tags = {
-      Environment = "dev" # <-- this changes per environment
-      ManagedBy   = "terraform"
-      Repo        = "https://github.com/walkerab/terraform-plus-github-actions"
-    }
-  }
-}
-
-module "some_ec2_service" {
-  source = "../modules/some-ec2-service"
+  ...
 }
 ```
-
-And the "some_ec2_service" module they call looks like this:
-
-```hcl
-terraform {
-  required_version = ">= 1.0.9"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 3.57.0"
-    }
-  }
-}
-
-# Find the latest amazon linux 2 ami in the region
-data "aws_ami" "amazon_linux_2_ami" {
-  most_recent = true
-  owners      = ["amazon"]
-  filter {
-    name   = "owner-alias"
-    values = ["amazon"]
-  }
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-}
-
-data "aws_default_tags" "this" {}
-
-resource "aws_instance" "this" {
-  ami           = data.aws_ami.amazon_linux_2_ami.id
-  instance_type = "t3.micro"
-
-  tags = {
-    Name        = "${data.aws_default_tags.this.tags.Environment}-some-ec2-service",
-    Application = "some-ec2-service"
-  }
-}
-```
-
-Effectively this creates one EC2 instance in the default VPC per each environment. This is lazy but I want to keep things short and simple.
-
-The state file and state lock are managed via S3 and DynamoDB respectively. If you are curious, there is an [extra bit of code that sets that up here](https://github.com/walkerab/terraform-plus-github-actions/tree/main/terraform/backend).
-
-Probably the only thing fancy happening here is the use of the new(ish) [`default_tags` feature in the AWS provider](https://www.hashicorp.com/blog/default-tags-in-the-terraform-aws-provider). The EC2 instances will have the default tags assigned to them as well as the tags we've defined inline for "Name" and "Application". The "Name" tag is leveraging default tags to make the environment easier to spot in the AWS console.
 
 ## Workflows
 
