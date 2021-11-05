@@ -9,7 +9,7 @@ Highlights:
 - AWS
 - Github Actions
 - Multi-environment
-- Pretty formatting on the `terraform plan`
+- Enhanced formatting on the `terraform plan`
 - Branch protection
 
 ## What Does it Do?
