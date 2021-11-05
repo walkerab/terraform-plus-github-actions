@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    # paths:
-    #   - 'terraform/**'
 
 jobs:
   lint:
@@ -62,7 +60,23 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color
+          terraform plan -no-color -out=tfplan \
+          && terraform show -no-color tfplan
+
+      # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
+      # It stores the amount of spaces in `\1` and the +/- in `\2`.
+      # Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
+      - name: Reformat Plan
+        run: |
+          echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
+          | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
+
+      - name: Put Plan in Env Var
+        run: |
+          PLAN=$(cat plan.txt)
+          echo "PLAN<<EOF" >> $GITHUB_ENV
+          echo "$PLAN" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -72,6 +86,6 @@ jobs:
           repo-token-user-login: 'github-actions[bot]'
           message: |
             ## ${{ matrix.path }} plan
-            ```
-            ${{ steps.plan.outputs.stdout }}
+            ```diff
+            ${{ env.PLAN }}
             ```

@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'terraform/**'
 
 jobs:
   lint:
@@ -76,8 +74,25 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color -out=plan.tfplan \
-          && terraform show -no-color plan.tfplan
+          terraform plan -no-color -out=tfplan \
+          && terraform show -no-color tfplan
+
+      # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
+      # It stores the amount of spaces in `\1` and the +/- in `\2`.
+      # Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
+      - name: Reformat Plan
+        if: steps.plan.outcome == 'success'
+        run: |
+          echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
+          | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
+
+      - name: Put Plan in Env Var
+        if: steps.plan.outcome == 'success'
+        run: |
+          PLAN=$(cat plan.txt)
+          echo "PLAN<<EOF" >> $GITHUB_ENV
+          echo "$PLAN" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Apply Terraform
         if: steps.plan.outcome == 'success'
@@ -88,7 +103,24 @@ jobs:
           terraform apply \
             -input=false \
             -no-color \
-            plan.tfplan
+            tfplan
+
+      - name: Post Plan and Apply to GitHub PR
+        if: steps.plan.outcome == 'success' && steps.apply.outcome == 'success'
+        uses: mshick/add-pr-comment@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]'
+          message: |
+            Applying **${{ matrix.path }}**:
+
+            ```
+            ${{ env.PLAN }}
+            ```
+
+            ```
+            ${{ steps.apply.outputs.stdout }}
+            ```
 
       - name: Post Plan Failure
         if: steps.plan.outcome == 'failure'
@@ -114,21 +146,4 @@ jobs:
 
             ```
             ${{ steps.apply.outputs.stderr }}
-            ```
-
-      - name: Post Plan and Apply to GitHub PR
-        if: steps.plan.outcome == 'success' && steps.apply.outcome == 'success'
-        uses: mshick/add-pr-comment@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          repo-token-user-login: 'github-actions[bot]'
-          message: |
-            Applying **${{ matrix.path }}**:
-
-            ```
-            ${{ steps.plan.outputs.stdout }}
-            ```
-
-            ```
-            ${{ steps.apply.outputs.stdout }}
             ```
