@@ -351,7 +351,7 @@ Plan output will now appear on PRs without the "Refreshing state..." messages an
 
 Before we go any further we need to discuss branch protection.
 
-[Branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) is an optional feature of paid Github accounts that ... you guessed it - protects branches. We want to protect the main branch in two ways:
+[Branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) is an optional feature of paid Github accounts that ... you guessed it: protects branches. We want to protect the main branch in two ways:
 
 1. Ensure all plan steps are "good" before we can merge
 2. Ensure the plans we see are up-to-date before we merge
