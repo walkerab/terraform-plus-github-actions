@@ -123,7 +123,7 @@ Probably the only thing fancy happening here is the use of the new(ish) [`defaul
 
 What we are really here to discuss is [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). We are going to make two of them. One for each of these events:
 
-1. When a PR is created against the `main` branch (or when it is updated)
+1. When a PR is created against the `main` branch (or when the PR is updated)
 2. When a PR is merged to the `main` branch
 
 We will start simple - such that the code runs and than progressively throw on some enhancements like shorter plan messages, and colored diffs.
