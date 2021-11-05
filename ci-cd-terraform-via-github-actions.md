@@ -616,9 +616,9 @@ So there you have it. An example of using Terraform/AWS in a CI/CD pipeline buil
 
 This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular I want to explore:
 
-- DRY code up using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)
-- Remove hard-coded Terraform version number
-- Save the `tfplan` from the plan workflow into S3 so it can be used in the apply workflow. This combined with [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) would make things very safe.
-- Apply before merge - trigger an action using comments similar to how [Atlantis](https://www.runatlantis.io/docs/using-atlantis.html#atlantis-apply) operates.
+- DRYing code up using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)
+- Removing hard-coded Terraform version number
+- Saving the `tfplan` from the plan workflow into S3 so it can be used in the apply workflow. This combined with [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) would make things very safe.
+- Appling before merge - maybe trigger an action using comments similar to how [Atlantis](https://www.runatlantis.io/docs/using-atlantis.html#atlantis-apply) operates.
 - Grouping comments together to cut down on noise
-- Make the example run for multiple AWS accounts not just multiple environments
+- Making the example run for multiple AWS accounts not just multiple environments
