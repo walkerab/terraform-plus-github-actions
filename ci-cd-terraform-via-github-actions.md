@@ -245,7 +245,7 @@ It redirects all of the command's output to `/dev/null` and then opts to [make a
 For our use case we actually want to do it slightly differently:
 
 ```sh
-terraform plan -no-color -out=tfplan \
+terraform plan -input=false -no-color -out=tfplan \
 && terraform show -no-color tfplan
 ```
 
@@ -290,7 +290,7 @@ Let's add another step between the plan and the comment to reformat the output t
 
 `sed` is taking all lines that begin with one or more spaces followed by a `+` or `-`. It stores the amount of spaces in `\1` and the +/- in `\2`. Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
 
-We've output this to a file to make it easier to have the plan be available to our comment action. The comment action needs to output `plan.txt` now but it cannot directly reference file contents. It can however reference [the env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context), a place for setting shared environment variables.
+We've output this to a file to make it easier to have the plan be available to our comment action. The comment action needs to output what's in `plan.txt` but it cannot directly reference file contents. It can however reference variables from the [the env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context).
 
 Let's add yet another step. This time to put the contents of `plan.txt` into an environment variable. This is tricky because of the aforementioned [limitations of multi-line assignments to outputs and env vars](https://trstringer.com/github-actions-multiline-strings/).
 
@@ -313,7 +313,7 @@ So altogether the last four steps look like this:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color -out=tfplan \
+          terraform plan -input=false -no-color -out=tfplan \
           && terraform show -no-color tfplan
 
       - name: Reformat Plan
@@ -444,7 +444,7 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -no-color -out=tfplan \
+          terraform plan -input=false -no-color -out=tfplan \
           && terraform show -no-color tfplan
 
       # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
