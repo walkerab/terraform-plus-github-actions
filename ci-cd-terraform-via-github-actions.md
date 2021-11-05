@@ -612,7 +612,7 @@ We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions
 
 ## Conclusion
 
-So there you have it. An example of using Terraform/AWS in a CI/CD pipeline built in Github Actions.
+So there you have it. An example of using Terraform/AWS in a CI/CD pipeline built with Github Actions.
 
 This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular I want to explore:
 
