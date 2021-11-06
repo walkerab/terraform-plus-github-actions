@@ -14,7 +14,7 @@ Highlights:
 
 ## What Does it Do?
 
-This code covers a very simple trunk-based development workflow.
+The code herein covers the use case of simple trunk-based development with Terraform.
 
 1. Develop against a feature branch and locally run `terraform plan` as you go
 2. When you are happy with it create a PR in Github
@@ -341,7 +341,7 @@ So altogether the last four steps look like this:
             ```
 ````
 
-Notice how we've referenced `env.PLAN` from the [Github env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context) and it's now inside of a diff code block.
+Notice how we've referenced `env.PLAN` from the [Github env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context) and it's been place inside of a diff code block.
 
 Plan output will now appear on PRs without the "Refreshing state..." messages and with some nice colors to highlight important changes.
 
