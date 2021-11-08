@@ -1,13 +1,13 @@
-# CI/CD Terraform Via Github Actions
+# CI/CD Terraform Via GitHub Actions
 
-I've recently had the opportunity to experiment with using Github Actions, Terraform, and AWS together. I'm going to walk you through an [example repo](https://github.com/walkerab/terraform-plus-github-actions) I've built to demonstrate my findings.
+I've recently had the opportunity to experiment with using GitHub Actions, Terraform, and AWS together. I'm going to walk you through an [example repo](https://github.com/walkerab/terraform-plus-github-actions) I've built to demonstrate my findings.
 
 Highlights:
 
 - Terraform (v1.0.9)
 - State is in S3/Dynamodb (_not_ Terraform Cloud)
 - AWS
-- Github Actions
+- GitHub Actions
 - Multi-environment
 - Enhanced formatting on the `terraform plan` output
 - Branch protection
@@ -17,10 +17,10 @@ Highlights:
 The code herein covers the use case of simple trunk-based development with Terraform.
 
 1. Develop against a feature branch and locally run `terraform plan` as you go
-2. When you are happy with it create a PR in Github
-3. Github Actions will generate a Terraform plan and put it in the PR comments for review
+2. When you are happy with it create a PR in GitHub
+3. GitHub Actions will generate a Terraform plan and put it in the PR comments for review
 4. Once the code and the plan output is reviewed and accepted it is merged to the main branch
-5. Github Actions will run `terraform apply` on our approved plan
+5. GitHub Actions will run `terraform apply` on our approved plan
 
 ## The Terraform Bits
 
@@ -51,11 +51,11 @@ What we are really here to discuss is [workflows](https://docs.github.com/en/act
 
 We will start simple - such that the code runs and than progressively throw on some enhancements like shorter plan messages, and colored diffs.
 
-### Primer on Github Actions
+### Primer on GitHub Actions
 
-If you aren't familiar with Github Actions, there is a little bit you'll need to know to follow along.
+If you aren't familiar with GitHub Actions, there is a little bit you'll need to know to follow along.
 
-There is a hierarchy. At the top level we have [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). They are triggered by events like pushing to the main branch or creating a pull request. They can also be manually triggered through the Github UI.
+There is a hierarchy. At the top level we have [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). They are triggered by events like pushing to the main branch or creating a pull request. They can also be manually triggered through the GitHub UI.
 
 Under that we have [jobs](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#jobs). Jobs create individual "runners" - you can think of them as VMs.
 
@@ -185,7 +185,7 @@ The first two steps you should already be familiar with so let's move onto the t
 
 The fourth step is where it starts to get interesting. We are running some shell script to initialize Terraform. Notice how we inject `${{ matrix.path }}` in the script so that it will select a different working directory depending on which environment this is job is running for.
 
-We set `-input=false` because we want [Terraform to know this is non-interactive](https://learn.hashicorp.com/tutorials/terraform/automate-terraform?in=terraform/automation#automated-terraform-cli-workflow). We don't want it to potentially ask for human input and cause the Github Action runner to hang indefinitely.
+We set `-input=false` because we want [Terraform to know this is non-interactive](https://learn.hashicorp.com/tutorials/terraform/automate-terraform?in=terraform/automation#automated-terraform-cli-workflow). We don't want it to potentially ask for human input and cause the GitHub Action runner to hang indefinitely.
 
 Then we get to the `terraform plan` step and there are a few things to note. We have added an `id` to this step so that it can be referenced in the next step. We have also explicitly set [continue-on-error](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepscontinue-on-error) to `true`. If we didn't set this it would default to `false` meaning that if the plan step were to fail for any reason the job would not advance to the next step. We _do_ want it to advance to the next step so we can be able to see _why_ the plan may have failed.
 
@@ -203,7 +203,7 @@ Now when we create a PR it will run `terraform plan` for all of our environments
 
 Now imagine a scenario where we've generated a plan on a PR but something was manually changed through the AWS console after-the-fact. We would want to be able to re-run the plan to see if it's changed at all.
 
-You _could_ make another code change and push to the feature branch again but that seems less than ideal. A simple work-around is to re-trigger the plan through the Github UI.
+You _could_ make another code change and push to the feature branch again but that seems less than ideal. A simple work-around is to re-trigger the plan through the GitHub UI.
 
 First you will need to expand the list of checks by clicking "Show all checks". Then click on "Details" for any one of the checks (it doesn't matter which one). On the page it takes you to there will be a button near the upper-right that says "Re-run all jobs". Hit it and your plan(s) will run again.
 
@@ -213,7 +213,7 @@ First you will need to expand the list of checks by clicking "Show all checks". 
 
 If we create a PR we will get a plan comment that looks something like this:
 
-![`terraform plan` output in Github PR comments section - simple black on gray with refresh messages at the top. Resources are being added, modified, and removed.](images/vanilla-stage-plan.png)
+![`terraform plan` output in GitHub PR comments section - simple black on gray with refresh messages at the top. Resources are being added, modified, and removed.](images/vanilla-stage-plan.png)
 
 This isn't bad but we can do better.
 
@@ -341,7 +341,7 @@ So altogether the last four steps look like this:
             ```
 ````
 
-Notice how we've referenced `env.PLAN` from the [Github env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context) and it's been place inside of a diff code block.
+Notice how we've referenced `env.PLAN` from the [GitHub env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context) and it's been place inside of a diff code block.
 
 Plan output will now appear on PRs without the "Refreshing state..." messages and with some nice colors to highlight important changes.
 
@@ -351,7 +351,7 @@ Plan output will now appear on PRs without the "Refreshing state..." messages an
 
 Before we go any further we need to discuss branch protection.
 
-[Branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) is an optional feature of paid Github accounts that ... you guessed it: protects branches. We want to protect the main branch in two ways:
+[Branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) is an optional feature of paid GitHub accounts that ... you guessed it: protects branches. We want to protect the main branch in two ways:
 
 1. Ensure all plan steps are "good" before we can merge
 2. Ensure the plans we see are up-to-date before we merge
@@ -519,7 +519,7 @@ jobs:
             ```
 ```` 
 
-At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", Github will perform a **merge** and then a **push** in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
+At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", GitHub will perform a **merge** and then a **push** in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
 
 There is a job to announce that the apply process is running. This is just for UX as it can take several moments for the actual results of the apply to appear. It makes it so there is some more immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
 
@@ -535,7 +535,7 @@ We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions
 
 ## Conclusion
 
-So there you have it. An example of using Terraform/AWS in a CI/CD pipeline built with Github Actions.
+So there you have it. An example of using Terraform/AWS in a CI/CD pipeline built with GitHub Actions.
 
 This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular I want to explore:
 
