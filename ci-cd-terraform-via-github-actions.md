@@ -78,6 +78,8 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'terraform/**'
 
 jobs:
   lint:
@@ -97,6 +99,8 @@ jobs:
 ```
 
 The workflow is triggered by the event of a pull request being made against the main branch. Subsequent pushes to the feature branch will also trigger this workflow. This is part of the default behavior for the [`pull_request` event trigger](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#pull_request). This is useful for example if we create a PR and then it fails the linting step. We can make our code changes and run `git push` again to re-trigger the check.
+
+The [`paths` option](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#onpushpull_requestpaths) makes it so the event only triggers when there are changes inside of the `terraform` folder. NOTE: If you are working on the workflow code itself it can be helpful to comment this option out so that you don't have to make a Terraform code change every time you want to test your workflow.
 
 There is currently only one job in this workflow, `lint`. (Note that we could have called it anything. `lint` is just the identifier for the job in case we need to reference it elsewhere.) It creates an ubuntu-20.04 "VM" with three steps that will execute on it.
 
@@ -389,6 +393,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'terraform/**'
 
 jobs:
   inform_about_apply:
