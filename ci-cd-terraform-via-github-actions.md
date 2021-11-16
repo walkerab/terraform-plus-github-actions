@@ -1,6 +1,6 @@
 # Employing GitHub Actions to Build a CI/CD GitOps Pipeline for Terraform 
 
-I've recently had the opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results were compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings.
+I've recently had the great opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings.
 
 First we'll cover some of the basics of GitHub actions, then we'll dig into building two distinct GitHub Action workflows. One to cover the `terraform plan` phase and another to cover the `terraform apply` phase.
 
@@ -358,7 +358,7 @@ Imagine this scenario: you create a PR that doesn't result in any actual infrast
 
 Having the branch protection rule, "Require branches to be up to date before merging", will guard against scenarios like this as it will not allow merging into main if another PR has been merged in the meantime.
 
-NOTE: Branch protection will only guard you from changes coming in through GitHub. We still need to watch out for external changes to infrastructure and Terraform state. We may cover how to handle this in a followup post.
+NOTE: Branch protection will only guard you from changes coming in through GitHub. We still need to watch out for external changes to infrastructure and Terraform state. I plan to cover this more in a follow-up post.
 
 ## Apply
 
@@ -503,7 +503,7 @@ jobs:
 
 At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", GitHub will perform a merge and then a push in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
 
-There is a job to announce that the apply process is running. This is just for UX as it can take several moments for the actual results of the apply to appear. It makes it so there is immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
+There is a job to announce that the apply process is running. This is just for UX as it can take several minutes for the actual results of the apply to appear. It makes it so there is immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
 
 This workflow is where the [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment) action really shines. [It contains logic to find the relevant PR to comment on](https://github.com/mshick/add-pr-comment/blob/master/src/main.ts#L134). This is the only commenting action I've come across that supports this. The other ones will error out saying that they aren't in the context of a PR.
 
@@ -513,7 +513,7 @@ The workflow has some control flow logic as there are three outcomes we need to 
 - The plan succeeds and the apply fails
 - Both the plan and the apply succeed
 
-We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepsif) to check the [steps context](https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context).
+We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepsif) to check the [steps context](https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context) so only the appropriate steps are executed.
 
 ## Conclusion
 
