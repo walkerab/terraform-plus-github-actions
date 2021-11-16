@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  style_check:
-    name: Style Check
+  lint:
+    name: Lint
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code

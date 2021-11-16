@@ -64,7 +64,7 @@ Workflows contain one or more jobs while jobs contain one or more steps. For eac
 
 For some of our jobs we will employ the [matrix strategy](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix). This takes one job definition and creates multiple separate jobs that can execute in parallel.
 
-## Style Check
+## Lint
 
 Before we do a full `terraform plan` let's do something a little easier. Let's make it so when we create a PR against the main branch it will run `terraform fmt` and let us know if our code complies with canonical format and style.
 
@@ -79,8 +79,8 @@ on:
       - main
 
 jobs:
-  style_check:
-    name: Style Check
+  lint:
+    name: Lint
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code
@@ -97,7 +97,7 @@ jobs:
 
 The workflow is triggered by the event of a pull request being made against the main branch. Subsequent pushes to the feature branch will also trigger this workflow. This is part of the default behavior for the [`pull_request` event trigger](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#pull_request). This is useful for example if we create a PR and then it fails the linting step. We can make our code changes and run `git push` again to re-trigger the check.
 
-There is currently only one job in this workflow, `style_check`. (Note that we could have called it anything. `style_check` is just the identifier for the job in case we need to reference it elsewhere.) It creates an ubuntu-20.04 VM with three steps that will execute on it.
+There is currently only one job in this workflow, `lint`. (Note that we could have called it anything. `lint` is just the identifier for the job in case we need to reference it elsewhere.) It creates an ubuntu-20.04 VM with three steps that will execute on it.
 
 The first step is incredibly common. It uses [actions/checkout@v2](https://github.com/actions/checkout) which by default checks out the code of the branch you are making the PR from - i.e. your feature branch. It fetches only a single commit from the head of the branch and so is quite performant.
 
@@ -116,7 +116,7 @@ Here's what it looks like:
 ````yaml
 jobs:
 
-  # ... style_check removed for brevity
+  # ... lint removed for brevity
 
   plan:
     name: Plan
@@ -352,7 +352,7 @@ This can easily be achieved by enabling ["Require status checks before merging"
 
 The next workflow we create will run `terraform apply` once the "Merge" button is clicked on the PR. It is going to run unsupervised and will just apply whatever changes it sees without asking us if it should or not.
 
-We don't want to merge code that hasn't passed our style check. We don't want to apply code that fails planning. Most importantly we need the plan that we see and approve on the PR to be the plan that `terraform apply` actually runs.
+We don't want to merge code that hasn't passed our lint check. We don't want to apply code that fails planning. Most importantly we need the plan that we see and approve on the PR to be the plan that `terraform apply` actually runs.
 
 Imagine this scenario: you create a PR that doesn't result in any actual infrastructure changes. Let's say there were some hard-coded database names and you switched them to using a shared naming module to DRY things up. While your PR is waiting for review your colleague makes another PR that actually changes the behavior of said naming module - it now puts a UUID at the end of every name. It gets approved and merged. Now the plan on your initial PR is out of date. It's not going to show you that when you hit merge your databases will be destroyed and re-created with different names. 🧨
 
