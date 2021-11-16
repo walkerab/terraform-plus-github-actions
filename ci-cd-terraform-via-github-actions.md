@@ -1,32 +1,31 @@
-# CI/CD Terraform Via GitHub Actions
+# Employing GitHub Actions to Build a CI/CD GitOps Pipeline for Terraform 
 
-I've recently had the opportunity to experiment with using GitHub Actions, Terraform, and AWS together. I'm going to walk you through an [example repo](https://github.com/walkerab/terraform-plus-github-actions) I've built to demonstrate my findings.
+I've recently had the opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results were compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings.
+
+First we'll cover some of the basics of GitHub actions, then we'll dig into building two distinct GitHub Action workflows. One to cover the `terraform plan` phase and another to cover the `terraform apply` phase.
 
 Highlights:
 
-- Terraform (v1.0.9)
-- State is in S3/Dynamodb (_not_ Terraform Cloud)
-- AWS
-- GitHub Actions
+- GitHub Actions + Terraform
 - Multi-environment
 - Enhanced formatting on the `terraform plan` output
 - Branch protection
 
 ## What Does it Do?
 
-The code herein covers the use case of simple trunk-based development with Terraform.
+The code herein fits the use case of your average GitOps workflow for Terraform:
 
-1. Develop against a feature branch and locally run `terraform plan` as you go
-2. When you are happy with it create a PR in GitHub
+1. Develop code against a feature branch and locally run `terraform plan` as you make changes
+2. When you are happy with the plan description create a PR against the main branch in GitHub
 3. GitHub Actions will generate a Terraform plan and put it in the PR comments for review
 4. Once the code and the plan output is reviewed and accepted it is merged to the main branch
-5. GitHub Actions will run `terraform apply` on our approved plan
+5. GitHub Actions will run `terraform apply` using the approved plan
 
 ## The Terraform Bits
 
 The [Terraform code](https://github.com/walkerab/terraform-plus-github-actions/tree/main/terraform) is fairly irrelevant. It's there as a placeholder just so there is _something_ to run the workflows against. It creates a dummy application that consists of a single EC2 instance. It's deployed into three virtually identical environments: dev, stage, and prod.
 
-All we really need to know is that it takes a single input variable to restrict which account the code will be run against.
+All we need to know is that it takes a single input variable to restrict which account the code will be run against.
 
 ```hcl
 variable "allowed_account_id" {
@@ -44,16 +43,16 @@ provider "aws" {
 
 ## Workflows
 
-What we are really here to discuss is [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). We are going to make two of them. One for each of these events:
+What we really want to exhibit is the [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). We are going to make two of them:
 
-1. When a PR is created against the `main` branch (or when the PR is updated)
-2. When a PR is merged to the `main` branch
+1. When a PR is created against the `main` branch (or when a PR is updated) we want to run `terraform plan`
+2. When a PR is merged to the `main` branch we want to run `terraform apply`
 
-We will start simple - such that the code runs and than progressively throw on some enhancements like shorter plan messages, and colored diffs.
+We will start simple - such that the code runs - and than progressively throw on enhancements like shorter plan messages, and colored diffs.
 
 ### Primer on GitHub Actions
 
-If you aren't familiar with GitHub Actions, there is a little bit you'll need to know to follow along.
+If you aren't familiar with GitHub Actions here is a little bit to help you follow along.
 
 There is a hierarchy. At the top level we have [workflows](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#workflows). They are triggered by events like pushing to the main branch or creating a pull request. They can also be manually triggered through the GitHub UI.
 
@@ -61,13 +60,13 @@ Under that we have [jobs](https://docs.github.com/en/actions/learn-github-action
 
 Under jobs we have [steps](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#steps). Steps run on said VMS and can share files and env vars as they are on the same machine
 
-Essentially workflows contain one or more jobs while jobs contain one or more steps. For each job there is a VM created and then its steps execute on said VM.
+Workflows contain one or more jobs while jobs contain one or more steps. For each job there is a VM created and then its steps execute on said VM.
 
 For some of our jobs we will employ the [matrix strategy](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix). This takes one job definition and creates multiple separate jobs that can execute in parallel.
 
-## Lint
+## Style Check
 
-Let's start simple. Let's make it so when we create a PR against the main branch it will run a lint check against our code.
+Before we do a full `terraform plan` let's do something a little easier. Let's make it so when we create a PR against the main branch it will run `terraform fmt` and let us know if our code complies with canonical format and style.
 
 Create a workflow file at `.github/workflows/plan-on-pr.yml` like this:
 
@@ -78,12 +77,10 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'terraform/**'
 
 jobs:
-  lint:
-    name: Lint
+  style_check:
+    name: Style Check
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code
@@ -100,19 +97,17 @@ jobs:
 
 The workflow is triggered by the event of a pull request being made against the main branch. Subsequent pushes to the feature branch will also trigger this workflow. This is part of the default behavior for the [`pull_request` event trigger](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#pull_request). This is useful for example if we create a PR and then it fails the linting step. We can make our code changes and run `git push` again to re-trigger the check.
 
-The [`paths` option](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#onpushpull_requestpaths) makes it so the event only triggers when there are changes inside of the `terraform` folder. NOTE: If you are working on the workflow code itself it can be helpful to comment this option out so that you don't have to make a Terraform code change every time you want to test your workflow.
-
-There is currently only one job in this workflow, `lint`. (Note that we could have called it anything. `lint` is just the identifier for the job in case we need to reference it elsewhere.) It creates an ubuntu-20.04 "VM" with three steps that will execute on it.
+There is currently only one job in this workflow, `style_check`. (Note that we could have called it anything. `style_check` is just the identifier for the job in case we need to reference it elsewhere.) It creates an ubuntu-20.04 VM with three steps that will execute on it.
 
 The first step is incredibly common. It uses [actions/checkout@v2](https://github.com/actions/checkout) which by default checks out the code of the branch you are making the PR from - i.e. your feature branch. It fetches only a single commit from the head of the branch and so is quite performant.
 
 The next step installs Terraform on the VM using [hashicorp/setup-terraform](https://github.com/hashicorp/setup-terraform). It also does a couple extra things but we'll come back to that.
 
-The last step is a simple run statement. It executes a shell script with [terraform fmt](https://www.terraform.io/docs/cli/commands/fmt.html) which will check if the code is formatted correctly or not. If it's not, the step will fail and will cause the job containing it to also fail. This is the default behavior for jobs and steps. If any step fails it will break the execution of the job. Likewise, if a job fails it will break the execution of a workflow. We will override some of this behavior later on.
+The last step is a simple run statement. It executes a shell script with [terraform fmt](https://www.terraform.io/docs/cli/commands/fmt.html) which will check if the code is formatted correctly or not. If it's not, the step will fail and will cause the job containing it to also fail. This is the default behavior for jobs and steps. If any step fails it will break the execution of the job.
 
 ## Plan
 
-For the next job in the workflow we will execute `terraform plan`. This is different than the last job in that we want to execute the command once for each of our three environments (or root modules): dev, stage, and prod. We then want to capture the output of the command and put it in the PR comments for review.
+For the next job in the workflow we will execute `terraform plan`. This is different than the last job in that we want to execute the command once for each of our three environments (root modules): dev, stage, and prod. We then want to capture the output of the command and put it into the PR comments for review.
 
 Also a key difference is that the plan action has to connect with some real-world infrastructure to detect the differences between our code, the state, and what we actually have running in AWS. This will require AWS credentials to be fed in.
 
@@ -121,7 +116,7 @@ Here's what it looks like:
 ````yaml
 jobs:
 
-  # ...
+  # ... style_check removed for brevity
 
   plan:
     name: Plan
@@ -183,39 +178,27 @@ Note that we explicitly set this value to prevent accidentally running our code 
 
 The [matrix strategy](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix) is being used so that we create three distinct jobs from one job definition. These will spin up in parallel and be fed a `matrix.path` variable to differentiate them.
 
-We've also set `fail-fast: false`. [This option](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategyfail-fast) will make it so if any one job fails it will not cancel any other in-progress jobs. This is desirable because potentially `terraform plan` could fail for one environment and not the other ones. We still want to see the results of `terraform plan` for all environments.
+We've also set `fail-fast: false`. [This option](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategyfail-fast) will make it so if any one job fails it will not cancel any other in-progress jobs. Potentially `terraform plan` could fail for one environment and not the other ones. We still want to see the results of `terraform plan` for all environments even if one of them is failing.
 
-The first two steps you should already be familiar with so let's move onto the third step. It's using [aws-actions/configure-aws-credentials](https://github.com/aws-actions/configure-aws-credentials) to set the appropriate AWS environment variables. That's it really.
+The first two steps (checkout and setup) you should already be familiar with so let's move onto the third step. It's using [aws-actions/configure-aws-credentials](https://github.com/aws-actions/configure-aws-credentials) to set the appropriate AWS environment variables. That's it really.
 
-The fourth step is where it starts to get interesting. We are running some shell script to initialize Terraform. Notice how we inject `${{ matrix.path }}` in the script so that it will select a different working directory depending on which environment this is job is running for.
+The fourth step is where it starts to get interesting. We are running some shell script to initialize Terraform. Notice how we inject `${{ matrix.path }}` in the script so that it will select a different working directory depending on which environment the job is running for.
 
 We set `-input=false` because we want [Terraform to know this is non-interactive](https://learn.hashicorp.com/tutorials/terraform/automate-terraform?in=terraform/automation#automated-terraform-cli-workflow). We don't want it to potentially ask for human input and cause the GitHub Action runner to hang indefinitely.
 
-Then we get to the `terraform plan` step and there are a few things to note. We have added an `id` to this step so that it can be referenced in the next step. We have also explicitly set [continue-on-error](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepscontinue-on-error) to `true`. If we didn't set this it would default to `false` meaning that if the plan step were to fail for any reason the job would not advance to the next step. We _do_ want it to advance to the next step so we can be able to see _why_ the plan may have failed.
+Then we get to the `plan` step and there are a few things to note. We have added an `id` to this step so that it can be referenced in the next step. We have also explicitly set [continue-on-error](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepscontinue-on-error) to `true`. If we didn't set this it would default to `false` meaning that if the plan step were to fail for any reason the job would not advance to the next step. We _do_ want it to advance to the next step so we can be able to see _why_ the plan may have failed.
 
 The `-no-color` flag is set because we only want plain-text output. This will remove the terminal formatting sequences. Although they look nice in a terminal and make the `+` show as green and the `-` show as red etc, they will look like gobbledygook inside of a PR comment. We will re-introduce color into the output further down.
 
-The last step uses an action I'm particularly fond of, [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment). It has an option to allow repeated comments that are identical. This is useful because you can run multiple plans on the same PR with identical output. That's not what I love about this action though. The big selling point is that it can make comments from workflows that aren't triggered from PRs. This isn't advantageous just yet but it will be when we create a workflow for `terraform apply`.
+The last step uses an action I'm particularly fond of, [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment). It has an option to allow repeated comments that are identical. This is useful because you may run multiple plans on the same PR with identical output. That's not what I love about this action though. The big selling point is that it can make comments from workflows that aren't triggered from PRs. This isn't advantageous just yet but it will be when we create a workflow for `terraform apply`.
 
 Inside the `message` of the last action we are referencing `steps.plan.outputs.stdout` and `steps.plan.outputs.stderr`. These are made available to us by the [hashicorp/setup-terraform](https://github.com/hashicorp/setup-terraform) step we ran earlier. It installs a wrapper script around the Terraform binary which exposes STDOUT and STDERR as outputs. This is the notable functionality I alluded to earlier. This is not something normally available on steps. I wish it was though! It's so handy not having to [explicitly define outputs](https://docs.github.com/en/actions/learn-github-actions/workflow-commands-for-github-actions#setting-an-output-parameter). Especially since it won't let you assign multi-line strings to the outputs without [some serious trickery](https://trstringer.com/github-actions-multiline-strings/)!
 
-The two outputs are logically ORed together so that if `steps.plan.outputs.stdout` is not available it will show `steps.plan.outputs.stderr` instead. This is what will happen if `terraform plan` fails for any reason.
-
-## Re-running a Plan
-
-Now when we create a PR it will run `terraform plan` for all of our environments and post the plan details to the PR for review. Super!
-
-Now imagine a scenario where we've generated a plan on a PR but something was manually changed through the AWS console after-the-fact. We would want to be able to re-run the plan to see if it's changed at all.
-
-You _could_ make another code change and push to the feature branch again but that seems less than ideal. A simple work-around is to re-trigger the plan through the GitHub UI.
-
-First you will need to expand the list of checks by clicking "Show all checks". Then click on "Details" for any one of the checks (it doesn't matter which one). On the page it takes you to there will be a button near the upper-right that says "Re-run all jobs". Hit it and your plan(s) will run again.
-
-<!-- Is there a simpler way to do this? We could make it trigger on a comment saying "plan" maybe -->
+The two outputs are [logically ORed](https://docs.github.com/en/actions/learn-github-actions/expressions#operators) together so that if `steps.plan.outputs.stdout` is not available it will show `steps.plan.outputs.stderr` instead. This is what will happen if `terraform plan` fails for any reason.
 
 ## Improvements to Plan Output
 
-If we create a PR we will get a plan comment that looks something like this:
+Now if we create a PR we will get a plan comment that looks something like this:
 
 ![`terraform plan` output in GitHub PR comments section - simple black on gray with refresh messages at the top. Resources are being added, modified, and removed.](images/vanilla-stage-plan.png)
 
@@ -223,7 +206,7 @@ This isn't bad but we can do better.
 
 ### Remove Refresh Messages
 
-If you've ever worked with a large Terraform module you know that the "Refreshing state..." lines can go on and on and on. There can often be hundreds of lines saying it. In the context of reviewing plan output these messages are not at all useful so lets strip them out.
+If you've ever worked with a large Terraform module you know that the "Refreshing state..." lines can go on and on and on. There can often be hundreds of lines saying this. When reviewing plan output these messages are not useful so lets strip them out.
 
 Note that we do still want refresh to run (it's essential). We simply don't want to see its output in our plan message.
 
@@ -246,7 +229,7 @@ terraform show tfplan
 
 It redirects all of the command's output to `/dev/null` and then opts to [make a binary of the plan](https://www.terraform.io/docs/cli/commands/plan.html#out-filename). The binary can then be read into the `terraform show` command and it will display essentially the same thing as `terraform plan` would have minus the "Refreshing state..." messages.
 
-For our use case we actually want to do it slightly differently:
+For our use case we want to do it slightly differently:
 
 ```sh
 terraform plan -input=false -no-color -out=tfplan \
@@ -257,11 +240,9 @@ We don't want `terraform show` running if `terraform plan` has failed as there w
 
 We also removed the redirect to `/dev/null`. This seems counter-intuitive to our goal of suppressing the output from `terraform plan` but since the [hashicorp/setup-terraform](https://github.com/hashicorp/setup-terraform) wrapper for STDOUT/STDERR only captures the _last_ Terraform command run in a given action we don't need to suppress the output.
 
-The `-no-color` option like I mentioned above is to keep the gobbledygook out of the comment.
-
 ### Re-Introduce Colors
 
-Normally `terraform plan` output is colorized using [terminal formatting sequences](https://en.wikipedia.org/wiki/ANSI_escape_code). We've intentionally removed this as it's not compatible with the plain text we are putting in PR comments. We do however another option for getting color text, [code blocks in diff syntax](https://github.com/github/markup/issues/1440#issuecomment-803889380).
+Normally `terraform plan` output is colorized using [terminal formatting sequences](https://en.wikipedia.org/wiki/ANSI_escape_code). We've intentionally removed this using `-no-color` as it's not compatible with the plain text we are putting in PR comments. We do however have another option for getting color text, [code blocks in diff syntax](https://github.com/github/markup/issues/1440#issuecomment-803889380).
 
 It's not well documented (or documented at all), but in PR comments you can make something like this:
 
@@ -279,11 +260,11 @@ and it will show up like this:
 
 ![Colorized comment on a PR using diff block](images/diff-colors.png)
 
-We can leverage this to bring some coloring back to our plan messages. It won't be the same style of coloring but it will at least have the intended effect of placing your attention where it needs to be.
+We can leverage this to bring some coloring back to our plan messages. It won't be the same style of coloring but it will at least have the intended effect of placing attention where it needs to be.
 
-The character that controls the color **must be at the beginning of the line** in order for it to do what we want. Otherwise the line will continue to show as plain text. Since Terraform indents all of its plan output we will need to move the control characters around somehow.
+Note that the character that controls the color **must be at the beginning of the line** in order for it to do anything. Otherwise the line will continue to show as plain text. Terraform indents all of its plan output so we will need to move the control characters to the front of the line.
 
-Let's add another step between the plan and the comment to reformat the output to have the `-` and `+` characters moved to the beginning of the line.
+Let's add another step between the plan and the comment to reformat the output:
 
 ```yaml
       - name: Reformat Plan
@@ -292,11 +273,11 @@ Let's add another step between the plan and the comment to reformat the output t
           | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
 ```
 
-`sed` is taking all lines that begin with one or more spaces followed by a `+` or `-`. It stores the amount of spaces in `\1` and the +/- in `\2`. Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces).
+`sed` is taking all lines that begin with one or more spaces followed by a `+` or `-`. It stores the amount of spaces in `\1` and the +/- in `\2`. Then replace that portion of the line with `\2\1` (+/- followed by the number of matched spaces). We've redirected the output to a file so it's accessible downstream.
 
-We've output this to a file to make it easier to have the plan be available to our comment action. The comment action needs to output what's in `plan.txt` but it cannot directly reference file contents. It can however reference variables from the [the env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context).
+The add-pr-comment action will need to reference what's in `plan.txt`. It lacks the functionality to this directly though. It can only reference variables that come in through [contexts](https://docs.github.com/en/actions/learn-github-actions/contexts).
 
-Let's add yet another step. This time to put the contents of `plan.txt` into an environment variable. This is tricky because of the aforementioned [limitations of multi-line assignments to outputs and env vars](https://trstringer.com/github-actions-multiline-strings/).
+Let's add yet another step. This time to put the contents of `plan.txt` into [the env context](https://docs.github.com/en/actions/learn-github-actions/contexts#env-context). This is tricky because of the aforementioned [limitations of multi-line assignments to outputs and env vars](https://trstringer.com/github-actions-multiline-strings/).
 
 ```yaml
       - name: Put Plan in Env Var
@@ -357,34 +338,31 @@ Before we go any further we need to discuss branch protection.
 
 [Branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) is an optional feature on GitHub repos that ... you guessed it: protects branches. We want to protect the main branch in two ways:
 
-1. Ensure all plan steps are "good" before we can merge
+1. Ensure all plan steps are successful before we can merge
 2. Ensure the plans we see are up-to-date before we merge
 
 This can easily be achieved by enabling ["Require status checks before merging"
 ](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) and setting it to "Require branches to be up to date before merging".
 
-**I cannot emphasize enough that you should not be using the workflows we've created here without these settings enabled!**
+![branch protection interface showing required status checks before merging and branches-be-up-to-date enabled](images/branch-protection.png)
 
-<!-- Maybe add some images? ? e.g. like one from here https://www.hashicorp.com/blog/continuous-integration-for-terraform-modules-with-github-actions
- -->
+**I cannot emphasize enough that you should not be using the workflows we've created here without these branch protection settings enabled!**
 
 ### Why? Why is branch protection so important?
 
 The next workflow we create will run `terraform apply` once the "Merge" button is clicked on the PR. It is going to run unsupervised and will just apply whatever changes it sees without asking us if it should or not.
 
-We don't want to merge code that hasn't passed our lint check. We don't want to apply code that fails planning. Most importantly we need the plan that we see and approve on the PR to be the plan that `terraform apply` actually runs.
+We don't want to merge code that hasn't passed our style check. We don't want to apply code that fails planning. Most importantly we need the plan that we see and approve on the PR to be the plan that `terraform apply` actually runs.
 
-Imagine this scenario: you create a PR with a code change that doesn't result in any actual infrastructure changes. Let's say there were some hard-coded database names and you switched them to using a shared naming module to DRY things up. While your PR is waiting for review your colleague makes another PR that actually changes the behavior of said naming module - it now puts a UUID at the end of every name. It gets approved and merged. Now the plan on your initial PR is out of date. It's not going to show you that when you hit merge your databases will be destroyed and re-created with different names. 🧨
+Imagine this scenario: you create a PR that doesn't result in any actual infrastructure changes. Let's say there were some hard-coded database names and you switched them to using a shared naming module to DRY things up. While your PR is waiting for review your colleague makes another PR that actually changes the behavior of said naming module - it now puts a UUID at the end of every name. It gets approved and merged. Now the plan on your initial PR is out of date. It's not going to show you that when you hit merge your databases will be destroyed and re-created with different names. 🧨
 
-<!-- ^ I would like a less-contrived example. -->
+Having the branch protection rule, "Require branches to be up to date before merging", will guard against scenarios like this as it will not allow merging into main if another PR has been merged in the meantime.
 
-Having the branch protection rule, "Require branches to be up to date before merging", will guard against scenarios like this as it will not allow merging into main if another PR has been merged in the mean time.
-
-<!-- I also know that we should be saving the plan from the PR and using it in the apply step but I don't want to add more complexity to this. -->
+NOTE: Branch protection will only guard you from changes coming in through GitHub. We still need to watch out for external changes to infrastructure and Terraform state. We may cover how to handle this in a followup post.
 
 ## Apply
 
-Now let's make it so when a merge to main occurs, `terraform apply` will be run. This workflow will require much less explaining than the one for `terraform plan`. We will be straight-up recycling some code from the previous workflow.
+Now let's make it so when there is a merge to main, `terraform apply` will be run. This workflow will require much less explaining than the one for `terraform plan`. We will be straight-up recycling some code from the previous workflow.
 
 ````yaml
 name: Plan / Apply On Merge
@@ -393,8 +371,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'terraform/**'
 
 jobs:
   inform_about_apply:
@@ -525,29 +501,31 @@ jobs:
             ```
 ```` 
 
-At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", GitHub will perform a **merge** and then a **push** in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
+At the top we can see this workflow is [triggered by a push](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#push). When someone hits "Merge", GitHub will perform a merge and then a push in the background so this is effectively what we want. (there isn't a "merge" event we can hook onto)
 
-There is a job to announce that the apply process is running. This is just for UX as it can take several moments for the actual results of the apply to appear. It makes it so there is some more immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
+There is a job to announce that the apply process is running. This is just for UX as it can take several moments for the actual results of the apply to appear. It makes it so there is immediate feedback right after hitting "Merge" and you don't have to sit there wondering "did it work?"
 
 This workflow is where the [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment) action really shines. [It contains logic to find the relevant PR to comment on](https://github.com/mshick/add-pr-comment/blob/master/src/main.ts#L134). This is the only commenting action I've come across that supports this. The other ones will error out saying that they aren't in the context of a PR.
 
-The workflow has some control flow logic as there are a handful of outcomes we need to check for:
+The workflow has some control flow logic as there are three outcomes we need to check for:
 
 - The plan fails
 - The plan succeeds and the apply fails
 - Both the plan and the apply succeed
 
-We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepsif) to handle this by checking the [steps context](https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context).
+We use [if conditionals](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepsif) to check the [steps context](https://docs.github.com/en/actions/learn-github-actions/contexts#steps-context).
 
 ## Conclusion
 
-So there you have it. An example of using Terraform/AWS in a CI/CD pipeline built with GitHub Actions.
+So there you have it. An example of using Terraform + AWS in a CI/CD pipeline built with GitHub Actions.
 
-This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular I want to explore:
+This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular:
 
+- Protecting against Terraform state manipulation that could be occurring outside of the GitOps workflow i.e. saving the `tfplan` into S3 so it can be used in the apply. This combined with [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) would make things very safe.
 - DRYing code up using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)
-- Removing hard-coded Terraform version number
-- Saving the `tfplan` from the plan workflow into S3 so it can be used in the apply workflow. This combined with [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) would make things very safe.
-- Applying before merge - maybe trigger an action using comments similar to how [Atlantis](https://www.runatlantis.io/docs/using-atlantis.html#atlantis-apply) operates.
-- Grouping comments together to cut down on noise
+- Removing hard-coded Terraform version number and Ubuntu versions
+- Trigger workflows on comments - for example we could re-run the workflows when someone comments "plan" or "apply" similar to how [Atlantis](https://www.runatlantis.io/docs/using-atlantis.html#atlantis-apply) operates.
 - Making the example run for multiple AWS accounts not just multiple environments
+- Grouping comments together to cut down on noise
+
+What would you explore next? Reach out to me and let me know!

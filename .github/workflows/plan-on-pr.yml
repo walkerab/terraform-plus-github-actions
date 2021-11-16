@@ -4,12 +4,10 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'terraform/**'
 
 jobs:
-  lint:
-    name: Lint
+  style_check:
+    name: Style Check
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code
