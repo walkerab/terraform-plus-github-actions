@@ -60,8 +60,8 @@ jobs:
         continue-on-error: true
         run: |
           cd terraform/${{ matrix.path }}
-          terraform plan -input=false -out=tfplan \
-          && terraform show tfplan
+          terraform plan -input=false -no-color -out=tfplan \
+          && terraform show -no-color tfplan
 
       # Sed is taking all lines that begin with one or more spaces followed by a `+` or `-`.
       # It stores the amount of spaces in `\1` and the +/- in `\2`.

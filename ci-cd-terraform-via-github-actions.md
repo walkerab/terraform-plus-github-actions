@@ -188,9 +188,12 @@ We set `-input=false` because we want [Terraform to know this is non-interactive
 
 Then we get to the `plan` step and there are a few things to note. We have added an `id` to this step so that it can be referenced in the next step. We have also explicitly set [continue-on-error](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepscontinue-on-error) to `true`. If we didn't set this it would default to `false` meaning that if the plan step were to fail for any reason the job would not advance to the next step. We _do_ want it to advance to the next step so we can be able to see _why_ the plan may have failed.
 
-The `-no-color` flag is set because we only want plain-text output. This will remove the terminal formatting sequences. Although they look nice in a terminal and make the `+` show as green and the `-` show as red etc, they will look like gobbledygook inside of a PR comment. We will re-introduce color into the output further down.
+The `-no-color` flag is set because we only want plain-text output. This will remove the terminal formatting sequences. Although they look nice in a terminal and make the `+` show as green and the `-` show as red etc, they will look like gobbledygook inside of a PR comment.
 
-![terraform plan with control characters in it](!!!)
+![terraform plan in terminal with colors](images/tf-plan-in-terminal.png)
+![terraform plan in PR comment with control characters in it](images/tf-plan-in-pr-comment.png)
+
+We will re-introduce color into the output further down.
 
 The last step uses an action I'm particularly fond of, [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment). It has an option to allow repeated comments that are identical. This is useful because you may run multiple plans on the same PR with identical output. That's not what I love about this action though. The big selling point is that it can make comments from workflows that aren't triggered from PRs. This isn't advantageous just yet but it will be when we create a workflow for `terraform apply`.
 
