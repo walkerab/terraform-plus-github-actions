@@ -13,7 +13,7 @@ categories: []
 
 I've recently had the great opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings. You can find all of the code from this post in the repo.
 
-If you are already using GitHub and Terraform this guide should serve as a considerable shortcut in making a functioning infrastructure deployment pipeline.
+If you are already using GitHub and Terraform this guide should serve as a considerable shortcut in making your own infrastructure deployment pipeline.
 
 First we'll cover some of the basics of GitHub actions, then we'll dig into building two distinct GitHub Action workflows. One to cover the `terraform plan` phase and another to cover the `terraform apply` phase.
 
