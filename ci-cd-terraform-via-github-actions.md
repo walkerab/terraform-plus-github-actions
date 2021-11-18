@@ -1,6 +1,17 @@
-# Employing GitHub Actions to Build a CI/CD GitOps Pipeline for Terraform 
+---
+title: Elevate Your Terraform Workflow with GitHub Actions
+date: 2021-11-17
+authors:
+  - andrew-walker
+description: "Getting started with Terraform GitOps. A practical guide to running Terraform in GitHub Actions."
+tags: []
+categories: []
+# socialImageSrc: "img/social/your-post-slug-here.jpg"
+---
 
-I've recently had the great opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings.
+# Elevate Your Terraform Workflow with GitHub Actions
+
+I've recently had the great opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings. You can find all of the code from this post in the repo.
 
 First we'll cover some of the basics of GitHub actions, then we'll dig into building two distinct GitHub Action workflows. One to cover the `terraform plan` phase and another to cover the `terraform apply` phase.
 
