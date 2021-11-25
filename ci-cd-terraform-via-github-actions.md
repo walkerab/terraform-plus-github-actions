@@ -11,7 +11,7 @@ categories: []
 
 # Elevate Your Terraform Workflow with GitHub Actions
 
-I've recently had the great opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings. You can find all of the code from this post in the repo.
+I've recently had the exciting opportunity to work with [Pathstream](https://www.pathstream.com/) on their infrastructure automation. We experimented with using GitHub Actions, Terraform, and AWS together in a [GitOps](https://about.gitlab.com/topics/gitops/)-style workflow. The results are compelling and worth sharing so I built a small [example repo](https://github.com/walkerab/terraform-plus-github-actions) to demonstrate some of our findings. You can find all of the code from this post in the repo.
 
 If you are already using GitHub and Terraform this guide should serve as a considerable shortcut in making your own infrastructure deployment pipeline.
 
@@ -187,7 +187,7 @@ jobs:
 
 We are setting an [environment variable](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#env) on the VM, `TF_VAR_allowed_account_id`. This follows the [Terraform input variable naming scheme](https://www.terraform.io/docs/language/values/variables.html#environment-variables) and so will be picked up by any Terraform CLI operations and fed into our root modules' "allowed_account_id" variable.
 
-Note that we explicitly set this value to prevent accidentally running our code against the wrong account. Believe me it happens!
+We explicitly set this value to prevent accidentally running our code against the wrong account. Believe me it happens! 💣
 
 The [matrix strategy](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix) is being used so that we create three distinct jobs from one job definition. These will spin up in parallel and be fed a `matrix.path` variable to differentiate them.
 
@@ -226,7 +226,7 @@ This isn't bad but we can do better.
 
 If you've ever worked with a large Terraform module you know that the "Refreshing state..." lines can go on and on and on. There can often be hundreds of lines saying this. When reviewing plan output these messages are not useful so lets strip them out.
 
-Note that we do still want refresh to run (it's essential). We simply don't want to see its output in our plan message.
+ℹ️ We do still want refresh to run (it's essential). We simply don't want to see its output in our plan message.
 
 The traditional workaround for this has been like so:
 
@@ -364,7 +364,7 @@ This can easily be achieved by enabling ["Require status checks before merging"
 
 ![branch protection interface showing required status checks before merging and branches-be-up-to-date enabled](images/branch-protection.png)
 
-**I cannot emphasize enough that you should not be using the workflows we've created here without these branch protection settings enabled!**
+**⚠️ I cannot emphasize enough that you should not be using the workflows we've created here without these branch protection settings enabled!**
 
 ### Why? Why is branch protection so important?
 
@@ -376,7 +376,7 @@ Imagine this scenario: you create a PR that doesn't result in any actual infrast
 
 Having the branch protection rule, "Require branches to be up to date before merging", will guard against scenarios like this as it will not allow merging into main if another PR has been merged in the meantime.
 
-NOTE: Branch protection will only guard you from changes coming in through GitHub. We still need to watch out for external changes to infrastructure and Terraform state. I plan to cover this more in a follow-up post.
+⚠️ Branch protection will only guard you from changes coming in through GitHub. We still need to watch out for external changes to infrastructure and Terraform state. I plan to cover this more in a follow-up post.
 
 ## Apply
 
@@ -539,11 +539,11 @@ So there you have it. An example of using Terraform + AWS in a CI/CD pipeline bu
 
 This is still a WIP so expect a follow-up. I can think of several ways I'd like to improve upon this code. In particular:
 
-- Protecting against Terraform state manipulation that could be occurring outside of the GitOps workflow i.e. saving the `tfplan` into S3 so it can be used in the apply. This combined with [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) would make things very safe.
+- Protecting against Terraform state manipulation that could be occurring outside of the GitOps workflow
 - DRYing code up using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)
 - Removing hard-coded Terraform version number and Ubuntu versions
 - Trigger workflows on comments - for example we could re-run the workflows when someone comments "plan" or "apply" similar to how [Atlantis](https://www.runatlantis.io/docs/using-atlantis.html#atlantis-apply) operates.
 - Making the example run for multiple AWS accounts not just multiple environments
 - Grouping comments together to cut down on noise
 
-What would you explore next? Reach out to me and let me know!
+What would you explore next? Reach out and let me know!
