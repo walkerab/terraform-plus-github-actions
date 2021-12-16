@@ -1,6 +1,6 @@
 # terraform-plus-github-actions
 
-Simplified example of using Terraform and Github Actions Together.
+This is the associated code for [this blog post](https://blog.testdouble.com/posts/2021-12-07-elevate-your-terraform-workflow-with-github-actions/). It's meant to serve as a simple example of using Terrafom + Github Actions together.
 
 The Terraform code is not substantial. This example is to demonstrate worflows for PRs and merges.
 
